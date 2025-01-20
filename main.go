@@ -141,14 +141,13 @@ func (g *Game) op_ex9e(x byte) error {
 // write to the display
 func (g *Game) op_dxyn(x, y, n byte) error {
 	g.v[0xf] = 0
-	screenWidth := DispWidth * 4
 	for yOffset := 0; yOffset < int(n); yOffset++ {
-		newY := (int(y) + yOffset) % DispHeight
+		newY := (int(g.v[y]) + yOffset) % DispHeight
 		data := g.mem[g.i+uint16(yOffset)]
-		newY *= screenWidth
+		newY *= DispWidth * 4
 		for xOffset := 0; xOffset < 8; xOffset++ {
 			if data&(0x80>>xOffset) != 0 {
-				newX := (int(x) + xOffset) % DispWidth
+				newX := (int(g.v[x]) + xOffset) % DispWidth
 				coord := newY + newX*4
 				if g.pixels[coord] == 0xFF {
 					g.v[0xf] = 1
