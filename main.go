@@ -128,6 +128,7 @@ func (g *Game) op_fx15(x byte) error {
 
 // wait for key press, store in v[x]
 func (g *Game) op_fx0a(x byte) error {
+	g.getKey()
 	if !g.isKeyPressed {
 		g.pc -= 2
 	} else {
@@ -144,6 +145,7 @@ func (g *Game) op_fx07(x byte) error {
 
 // skip next instruction if key pressed != v[x]
 func (g *Game) op_exa1(x byte) error {
+	g.getKey()
 	if !g.isKeyPressed || (g.isKeyPressed && g.pressed != g.v[x]) {
 		g.pc += 2
 	}
@@ -152,6 +154,7 @@ func (g *Game) op_exa1(x byte) error {
 
 // skip next instruction if key pressed == v[x]
 func (g *Game) op_ex9e(x byte) error {
+	g.getKey()
 	if g.isKeyPressed && g.pressed == g.v[x] {
 		g.pc += 2
 	}
@@ -369,7 +372,6 @@ func (g *Game) getKey() error {
 }
 
 func (g *Game) cycle() error {
-	g.getKey()
 	opcode := g.fetch()
 	nnn := opcode & 0xfff
 	x := byte(opcode >> 8 & 0xf)
@@ -473,6 +475,7 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.shouldDraw {
+		screen.Clear()
 		screen.DrawImage(g.disp, &DispOps)
 	}
 	g.shouldDraw = false
