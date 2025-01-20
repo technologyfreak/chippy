@@ -28,9 +28,9 @@ var (
 
 // error
 var (
-	ErrStackIsFull    = errors.New("Stack is full.")
-	ErrStackIsEmpty   = errors.New("Stack is empty.")
-	ErrNotImplemented = errors.New("Not implmented.")
+	ErrStackIsFull         = errors.New("Stack is full.")
+	ErrStackIsEmpty        = errors.New("Stack is empty.")
+	ErrNotValidInstruction = errors.New("Not a valid instruction.")
 )
 
 type (
@@ -447,7 +447,7 @@ func (g *Game) cycle() error {
 	case opcode | 0x00e0:
 		err = g.op_00e0()
 	default:
-		err = ErrNotImplemented
+		err = ErrNotValidInstruction
 	}
 
 	if g.dt > 0 {
