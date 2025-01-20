@@ -368,88 +368,98 @@ func (g *Game) getKey() error {
 	return nil
 }
 
-func (g *Game) cycle() error {
-	opcode := g.fetch()
-	nnn := opcode & 0xfff
-	x := byte(opcode >> 8 & 0xf)
-	y := byte(opcode >> 4 & 0xf)
-	n := byte(opcode & 0xf)
-	kk := byte(opcode & 0xff)
-	var err error
+func (g *Game) cycles(perFrame int) error {
+	for cycle := 0; cycle < perFrame; cycle++ {
+		opcode := g.fetch()
+		nnn := opcode & 0xfff
+		x := byte(opcode >> 8 & 0xf)
+		y := byte(opcode >> 4 & 0xf)
+		n := byte(opcode & 0xf)
+		kk := byte(opcode & 0xff)
+		var err error
 
-	switch opcode {
-	case opcode | 0xf065:
-		err = g.op_fx65(x)
-	case opcode | 0xf055:
-		err = g.op_fx55(x)
-	case opcode | 0xf033:
-		err = g.op_fx33(x)
-	case opcode | 0xf029:
-		err = g.op_fx29(x)
-	case opcode | 0xf01e:
-		err = g.op_fx1e(x)
-	case opcode | 0xf018:
-		err = g.op_fx18(x)
-	case opcode | 0xf015:
-		err = g.op_fx15(x)
-	case opcode | 0xf00a:
-		err = g.op_fx0a(x)
-	case opcode | 0xf007:
-		err = g.op_fx07(x)
-	case opcode | 0xe0a1:
-		err = g.op_exa1(x)
-	case opcode | 0xe09e:
-		err = g.op_ex9e(x)
-	case opcode | 0xd000:
-		err = g.op_dxyn(x, y, n)
-	case opcode | 0xc000:
-		err = g.op_cxkk(x, kk)
-	case opcode | 0xb000:
-		err = g.op_bnnn(nnn)
-	case opcode | 0xa000:
-		err = g.op_annn(nnn)
-	case opcode | 0x9000:
-		err = g.op_9xy0(x, y)
-	case opcode | 0x800e:
-		err = g.op_8xye(x)
-	case opcode | 0x8007:
-		err = g.op_8xy7(x, y)
-	case opcode | 0x8006:
-		err = g.op_8xy6(x, y)
-	case opcode | 0x8005:
-		err = g.op_8xy5(x, y)
-	case opcode | 0x8004:
-		err = g.op_8xy4(x, y)
-	case opcode | 0x8003:
-		err = g.op_8xy3(x, y)
-	case opcode | 0x8002:
-		err = g.op_8xy2(x, y)
-	case opcode | 0x8001:
-		err = g.op_8xy1(x, y)
-	case opcode | 0x8000:
-		err = g.op_8xy0(x, y)
-	case opcode | 0x7000:
-		err = g.op_7xkk(x, kk)
-	case opcode | 0x6000:
-		err = g.op_6xkk(x, kk)
-	case opcode | 0x5000:
-		err = g.op_5xy0(x, y)
-	case opcode | 0x4000:
-		err = g.op_4xkk(x, kk)
-	case opcode | 0x3000:
-		err = g.op_3xkk(x, kk)
-	case opcode | 0x2000:
-		err = g.op_2nnn(nnn)
-	case opcode | 0x1000:
-		err = g.op_1nnn(nnn)
-	case opcode | 0x00ee:
-		err = g.op_00ee()
-	case opcode | 0x00e0:
-		err = g.op_00e0()
-	default:
-		err = ErrNotValidInstruction
+		switch opcode {
+		case opcode | 0xf065:
+			err = g.op_fx65(x)
+		case opcode | 0xf055:
+			err = g.op_fx55(x)
+		case opcode | 0xf033:
+			err = g.op_fx33(x)
+		case opcode | 0xf029:
+			err = g.op_fx29(x)
+		case opcode | 0xf01e:
+			err = g.op_fx1e(x)
+		case opcode | 0xf018:
+			err = g.op_fx18(x)
+		case opcode | 0xf015:
+			err = g.op_fx15(x)
+		case opcode | 0xf00a:
+			err = g.op_fx0a(x)
+		case opcode | 0xf007:
+			err = g.op_fx07(x)
+		case opcode | 0xe0a1:
+			err = g.op_exa1(x)
+		case opcode | 0xe09e:
+			err = g.op_ex9e(x)
+		case opcode | 0xd000:
+			err = g.op_dxyn(x, y, n)
+		case opcode | 0xc000:
+			err = g.op_cxkk(x, kk)
+		case opcode | 0xb000:
+			err = g.op_bnnn(nnn)
+		case opcode | 0xa000:
+			err = g.op_annn(nnn)
+		case opcode | 0x9000:
+			err = g.op_9xy0(x, y)
+		case opcode | 0x800e:
+			err = g.op_8xye(x)
+		case opcode | 0x8007:
+			err = g.op_8xy7(x, y)
+		case opcode | 0x8006:
+			err = g.op_8xy6(x, y)
+		case opcode | 0x8005:
+			err = g.op_8xy5(x, y)
+		case opcode | 0x8004:
+			err = g.op_8xy4(x, y)
+		case opcode | 0x8003:
+			err = g.op_8xy3(x, y)
+		case opcode | 0x8002:
+			err = g.op_8xy2(x, y)
+		case opcode | 0x8001:
+			err = g.op_8xy1(x, y)
+		case opcode | 0x8000:
+			err = g.op_8xy0(x, y)
+		case opcode | 0x7000:
+			err = g.op_7xkk(x, kk)
+		case opcode | 0x6000:
+			err = g.op_6xkk(x, kk)
+		case opcode | 0x5000:
+			err = g.op_5xy0(x, y)
+		case opcode | 0x4000:
+			err = g.op_4xkk(x, kk)
+		case opcode | 0x3000:
+			err = g.op_3xkk(x, kk)
+		case opcode | 0x2000:
+			err = g.op_2nnn(nnn)
+		case opcode | 0x1000:
+			err = g.op_1nnn(nnn)
+		case opcode | 0x00ee:
+			err = g.op_00ee()
+		case opcode | 0x00e0:
+			err = g.op_00e0()
+		default:
+			err = ErrNotValidInstruction
+		}
+
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
+func (g *Game) Update() error {
+	g.cycles(20)
 	if g.dt > 0 {
 		g.dt--
 	} else {
@@ -462,11 +472,6 @@ func (g *Game) cycle() error {
 		g.st = 60
 	}
 
-	return err
-}
-
-func (g *Game) Update() error {
-	g.cycle()
 	return nil
 }
 
