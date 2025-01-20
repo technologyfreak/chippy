@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const (
@@ -34,17 +35,25 @@ var (
 
 type (
 	Game struct {
-		mem        [MaxMem]byte
-		v          [MaxRegs]byte // registers
-		i          uint16        // address register
-		pc         uint16        // pointer counter
-		sp         uint16        // stack pointer
-		stack      [MaxStack]uint16
-		dt         byte // delay timer
-		st         byte // sound timer
+		mem    [MaxMem]byte
+		keymap map[ebiten.Key]byte
+
+		v  [MaxRegs]byte // registers
+		i  uint16        // address register
+		pc uint16        // pointer counter
+		sp uint16        // stack pointer
+
+		stack [MaxStack]uint16
+
+		dt byte // delay timer
+		st byte // sound timer
+
 		pixels     [DispWidth * DispHeight * 4]byte
 		disp       *ebiten.Image
 		shouldDraw bool
+
+		isKeyPressed bool
+		pressed      byte
 	}
 )
 
@@ -53,6 +62,7 @@ func (g *Game) load(program string, start uint16) error {
 	if err != nil {
 		return err
 	}
+	g.pc = start
 	for _, b := range data {
 		g.mem[start] = b
 		start++
@@ -118,7 +128,12 @@ func (g *Game) op_fx15(x byte) error {
 
 // wait for key press, store in v[x]
 func (g *Game) op_fx0a(x byte) error {
-	return ErrNotImplemented
+	if !g.isKeyPressed {
+		g.pc -= 2
+	} else {
+		g.v[x] = g.pressed
+	}
+	return nil
 }
 
 // set v[x] to delay timer
@@ -129,12 +144,18 @@ func (g *Game) op_fx07(x byte) error {
 
 // skip next instruction if key pressed != v[x]
 func (g *Game) op_exa1(x byte) error {
-	return ErrNotImplemented
+	if !g.isKeyPressed || (g.isKeyPressed && g.pressed != g.v[x]) {
+		g.pc += 2
+	}
+	return nil
 }
 
 // skip next instruction if key pressed == v[x]
 func (g *Game) op_ex9e(x byte) error {
-	return ErrNotImplemented
+	if g.isKeyPressed && g.pressed == g.v[x] {
+		g.pc += 2
+	}
+	return nil
 }
 
 // write to the display
@@ -204,7 +225,7 @@ func (g *Game) op_8xye(x byte) error {
 func (g *Game) op_8xy7(x, y byte) error {
 	diff, borrow := bits.Sub(uint(g.v[y]), uint(g.v[x]), 0)
 	g.v[x] = byte(diff)
-	g.v[0xf] = byte(^borrow)
+	g.v[0xf] = 1 - byte(borrow)
 	return nil
 }
 
@@ -223,7 +244,7 @@ func (g *Game) op_8xy6(x, y byte) error {
 func (g *Game) op_8xy5(x, y byte) error {
 	diff, borrow := bits.Sub(uint(g.v[x]), uint(g.v[y]), 0)
 	g.v[x] = byte(diff)
-	g.v[0xf] = byte(^borrow)
+	g.v[0xf] = 1 - byte(borrow)
 	return nil
 }
 
@@ -231,7 +252,7 @@ func (g *Game) op_8xy5(x, y byte) error {
 func (g *Game) op_8xy4(x, y byte) error {
 	sum := uint16(g.v[x]) + uint16(g.v[y])
 	g.v[x] += g.v[y]
-	g.v[0xf] += byte((sum >> 8) & 1)
+	g.v[0xf] = byte((sum >> 8) & 1)
 	return nil
 }
 
@@ -333,7 +354,22 @@ func (g *Game) op_00e0() error {
 	return nil
 }
 
+func (g *Game) getKey() error {
+	g.isKeyPressed = false
+	keys := make([]ebiten.Key, 0)
+	keys = inpututil.AppendPressedKeys(keys)
+	for _, key := range keys {
+		if pressed, valid := g.keymap[key]; valid {
+			g.pressed = pressed
+			g.isKeyPressed = true
+			return nil
+		}
+	}
+	return nil
+}
+
 func (g *Game) cycle() error {
+	g.getKey()
 	opcode := g.fetch()
 	nnn := opcode & 0xfff
 	x := byte(opcode >> 8 & 0xf)
@@ -455,18 +491,18 @@ func main() {
 		disp: ebiten.NewImage(DispWidth, DispHeight),
 		dt:   60,
 		st:   60,
-		pc:   DefaultStart,
 	}
 
 	mapFontset(&game.mem)
-	game.load("2-ibm-logo.ch8", DefaultStart)
+	mapKeys(&game.keymap)
+	game.load("5-quirks.ch8", DefaultStart)
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func mapFontset(m *[MaxMem]byte) {
+func mapFontset(mem *[MaxMem]byte) {
 	fontset := [FontSetSize]byte{
 		0xf0, 0x90, 0x90, 0x90, 0xf0, // 0
 		0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -485,7 +521,28 @@ func mapFontset(m *[MaxMem]byte) {
 		0xf0, 0x80, 0xf0, 0x80, 0xf0, // E
 		0xf0, 0x80, 0xf0, 0x80, 0x80, // F
 	}
-	copy(m[:], fontset[:])
+	copy(mem[:], fontset[:])
+}
+
+func mapKeys(keymap *map[ebiten.Key]byte) {
+	(*keymap) = map[ebiten.Key]byte{
+		ebiten.Key1: 0x1,
+		ebiten.Key2: 0x2,
+		ebiten.Key3: 0x3,
+		ebiten.Key4: 0xC,
+		ebiten.KeyQ: 0x4,
+		ebiten.KeyW: 0x5,
+		ebiten.KeyE: 0x6,
+		ebiten.KeyR: 0xD,
+		ebiten.KeyA: 0x7,
+		ebiten.KeyS: 0x8,
+		ebiten.KeyD: 0x9,
+		ebiten.KeyF: 0xE,
+		ebiten.KeyZ: 0xA,
+		ebiten.KeyX: 0x0,
+		ebiten.KeyC: 0xB,
+		ebiten.KeyV: 0xF,
+	}
 }
 
 func bcd(num, place byte) byte {
