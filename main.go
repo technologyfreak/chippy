@@ -49,13 +49,13 @@ type (
 )
 
 func (g *Game) load(program string, start uint16) error {
-	if data, err := os.ReadFile(program); err != nil {
+	data, err := os.ReadFile(program)
+	if err != nil {
 		return err
-	} else {
-		for _, b := range data {
-			g.mem[start] = b
-			start++
-		}
+	}
+	for _, b := range data {
+		g.mem[start] = b
+		start++
 	}
 	return nil
 }
@@ -86,10 +86,9 @@ func (g *Game) op_fx55(x byte) error {
 
 // store BCD rep of v[x] in i, i+1, and i+2
 func (g *Game) op_fx33(x byte) error {
-	rx := g.v[x]
-	g.mem[g.i] = bcd(rx, 100)
-	g.mem[g.i+1] = bcd(rx, 10)
-	g.mem[g.i+2] = bcd(rx, 1)
+	g.mem[g.i] = bcd(g.v[x], 100)
+	g.mem[g.i+1] = bcd(g.v[x], 10)
+	g.mem[g.i+2] = bcd(g.v[x], 1)
 	return nil
 }
 
