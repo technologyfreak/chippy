@@ -48,9 +48,8 @@ type (
 		dt byte // delay timer
 		st byte // sound timer
 
-		pixels     [DispWidth * DispHeight * 4]byte
-		disp       *ebiten.Image
-		shouldDraw bool
+		pixels [DispWidth * DispHeight * 4]byte
+		disp   *ebiten.Image
 
 		isKeyPressed bool
 		pressed      byte
@@ -183,7 +182,6 @@ func (g *Game) op_dxyn(x, y, n byte) error {
 		}
 	}
 	g.disp.WritePixels(g.pixels[:])
-	g.shouldDraw = true
 	return nil
 }
 
@@ -353,7 +351,6 @@ func (g *Game) op_00e0() error {
 	var empty [DispWidth * DispHeight * 4]byte
 	g.pixels = empty
 	g.disp.WritePixels(g.pixels[:])
-	g.shouldDraw = true
 	return nil
 }
 
@@ -474,11 +471,8 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.shouldDraw {
-		screen.Clear()
-		screen.DrawImage(g.disp, &DispOps)
-	}
-	g.shouldDraw = false
+	screen.Clear()
+	screen.DrawImage(g.disp, &DispOps)
 }
 
 func (g *Game) Layout(outWidth, outHeight int) (int, int) {
